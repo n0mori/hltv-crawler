@@ -1,34 +1,33 @@
-package main
+package hltv
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
-	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
 //Team represents a counter-strike team
 type Team struct {
-	Id          int
+	ID          int
 	Name        string
-	Url         string
+	URL         string
 	Nationality string
 }
 
 //Match represents a match between the home team and away team
 type Match struct {
-	Id        int
-	Url       string
+	ID        int
+	URL       string
 	Home      Team
 	HomeScore int
 	Away      Team
 	AwayScore int
+	EventURL  string
+	BestOf    int
+	Date      int64
 }
 
 func getDocument(url string) *goquery.Document {
@@ -46,7 +45,8 @@ func getDocument(url string) *goquery.Document {
 	return document
 }
 
-func matchData(url string) *Match {
+//MatchData return a Match pointer for the specified match url
+func MatchData(url string) *Match {
 	document := getDocument(url)
 
 	teams := make([]Team, 2)
@@ -65,24 +65,53 @@ func matchData(url string) *Match {
 
 		teams[index] = Team{
 			Name:        name,
-			Url:         "https://hltv.org" + teamURL,
-			Id:          teamID,
+			URL:         "https://hltv.org" + teamURL,
+			ID:          teamID,
 			Nationality: nationality}
 
 		scores[index] = score
 	})
 
+	divEvent := document.Find(".timeAndEvent").First()
+
+	dateText, _ := divEvent.Find(".time").Attr("data-unix")
+
+	matchDate, err := strconv.ParseInt(dateText, 10, 64)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	eventLink := divEvent.Find(".event a")
+
+	eventHref, _ := eventLink.Attr("href")
+
+	bestDiv := document.Find(".veto-box").First()
+	bestOfText := bestDiv.Children().First().Text()
+
+	br := regexp.MustCompile("^Best of ([0-9])")
+
+	bestOf, err := strconv.Atoi(br.FindStringSubmatch(bestOfText)[1])
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &Match{
-		Id:        matchID,
-		Url:       url,
+		ID:        matchID,
+		URL:       url,
 		Home:      teams[0],
 		HomeScore: scores[0],
 		Away:      teams[1],
-		AwayScore: scores[1]}
+		AwayScore: scores[1],
+		Date:      matchDate,
+		EventURL:  eventHref,
+		BestOf:    bestOf}
 
 }
 
-func matchLinks() []string {
+// MatchLinks returns all match links
+func MatchLinks() []string {
 
 	document := getDocument("https://hltv.org/results?content=stats&stars=1")
 
@@ -96,44 +125,4 @@ func matchLinks() []string {
 	})
 
 	return links
-}
-
-func main() {
-	links := matchLinks()
-
-	done := make([]chan bool, 0, 100)
-
-	matches := make([]*Match, 0, 100)
-	matchMutex := &sync.Mutex{}
-
-	file, err := os.OpenFile("matches", os.O_CREATE|os.O_WRONLY, 0666)
-
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	for _, link := range links {
-		c := make(chan bool, 1)
-		done = append(done, c)
-
-		go func(ch chan bool, url string) {
-			m := matchData(url)
-			json, _ := json.Marshal(m)
-			fmt.Fprintln(file, string(json))
-
-			matchMutex.Lock()
-			matches = append(matches, m)
-			matchMutex.Unlock()
-
-			ch <- true
-
-		}(c, link)
-
-		//println(link)
-	}
-
-	for _, c := range done {
-		<-c
-	}
 }
