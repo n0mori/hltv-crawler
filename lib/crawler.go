@@ -49,14 +49,13 @@ func getDocument(url string) *goquery.Document {
 func MatchData(url string) *Match {
 	document := getDocument(url)
 
-	teams := make([]Team, 2)
+	teams := make([]Team, 5)
 	r := regexp.MustCompile("/([0-9]+)/")
 	matchID, _ := strconv.Atoi(r.FindStringSubmatch(url)[1])
-	scores := make([]int, 2)
+	scores := make([]int, 5)
 
 	divTeam := document.Find("div.team")
 	divTeam.Each(func(index int, element *goquery.Selection) {
-
 		nationality, _ := element.Find("img").First().Attr("title")
 		name := element.Find(".teamName").Text()
 		teamURL, _ := element.Find("div a").Attr("href")
