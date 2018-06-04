@@ -29,8 +29,6 @@ func full() {
 
 		go func(ch chan bool, url string) {
 			m := hltv.MatchData(url)
-			json, _ := json.Marshal(m)
-			fmt.Fprintln(file, string(json))
 
 			matchMutex.Lock()
 			matches = append(matches, m)
@@ -47,6 +45,11 @@ func full() {
 		<-c
 	}
 
+	for _, m := range matches {
+		json, _ := json.MarshalIndent(m, "", "\t")
+		fmt.Fprintln(file, string(json))
+	}
+
 }
 
 func single() {
@@ -55,7 +58,7 @@ func single() {
 	println("Escreva a URL:")
 	fmt.Scanln(&url)
 
-	json, _ := json.Marshal(hltv.MatchData(url))
+	json, _ := json.MarshalIndent(hltv.MatchData(url), "", "\t")
 	println(string(json))
 
 }

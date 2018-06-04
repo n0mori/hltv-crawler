@@ -5,9 +5,23 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+//Player represents a player that has played in a match.
+type Player struct {
+	URL         string
+	ID          int
+	Name        string
+	Nationality string
+	Kills       int
+	Deaths      int
+	ADR         float64
+	KAST        float64
+	Rating      float64
+}
 
 //Team represents a counter-strike team
 type Team struct {
@@ -15,6 +29,7 @@ type Team struct {
 	Name        string
 	URL         string
 	Nationality string
+	Players     []Player
 }
 
 //Match represents a match between the home team and away team
@@ -69,6 +84,46 @@ func MatchData(url string) *Match {
 			Nationality: nationality}
 
 		scores[index] = score
+	})
+
+	nameRegex := regexp.MustCompile("/([^/]*)$")
+	divScoreboard := document.Find("#all-content")
+	divScoreboard.Find("table").Each(func(index int, element *goquery.Selection) {
+		players := make([]Player, 5)
+
+		element.Find("tr").Each(func(i int, e *goquery.Selection) {
+			if i == 0 {
+				return
+			}
+
+			i--
+
+			url := "hltv.org" + e.Find(".players a").AttrOr("href", "")
+			name := nameRegex.FindStringSubmatch(url)[1]
+			id, _ := strconv.Atoi(r.FindStringSubmatch(url)[1])
+			nation := e.Find(".flag").AttrOr("title", "")
+			kd := strings.Split(e.Find(".kd").Text(), "-")
+			kills, _ := strconv.Atoi(kd[0])
+			deaths, _ := strconv.Atoi(kd[1])
+			adr, _ := strconv.ParseFloat(e.Find(".adr").Text(), 64)
+			kast, _ := strconv.ParseFloat(strings.Trim(e.Find(".kast").Text(), "%"), 64)
+			rating, _ := strconv.ParseFloat(e.Find(".rating").Text(), 64)
+
+			player := Player{
+				URL:         url,
+				Name:        name,
+				ID:          id,
+				Nationality: nation,
+				Kills:       kills,
+				Deaths:      deaths,
+				ADR:         adr,
+				KAST:        kast,
+				Rating:      rating}
+
+			players[i] = player
+		})
+
+		teams[index].Players = players
 	})
 
 	divEvent := document.Find(".timeAndEvent").First()
