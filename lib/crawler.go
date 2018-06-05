@@ -71,10 +71,14 @@ func MatchData(url string) *Match {
 
 	divTeam := document.Find("div.team")
 	divTeam.Each(func(index int, element *goquery.Selection) {
+		if index > 1 {
+			return
+		}
+
 		nationality, _ := element.Find("img").First().Attr("title")
 		name := element.Find(".teamName").Text()
 		teamURL, _ := element.Find("div a").Attr("href")
-		teamID, _ := strconv.Atoi(r.FindStringSubmatch(url)[1])
+		teamID, _ := strconv.Atoi(r.FindStringSubmatch(teamURL)[1])
 		score, _ := strconv.Atoi(element.Find("div").Last().Text())
 
 		teams[index] = Team{
@@ -98,7 +102,7 @@ func MatchData(url string) *Match {
 
 			i--
 
-			url := "hltv.org" + e.Find(".players a").AttrOr("href", "")
+			url := "https://hltv.org" + e.Find(".players a").AttrOr("href", "")
 			name := nameRegex.FindStringSubmatch(url)[1]
 			id, _ := strconv.Atoi(r.FindStringSubmatch(url)[1])
 			nation := e.Find(".flag").AttrOr("title", "")
@@ -159,7 +163,7 @@ func MatchData(url string) *Match {
 		Away:      teams[1],
 		AwayScore: scores[1],
 		Date:      matchDate,
-		EventURL:  eventHref,
+		EventURL:  "https://hltv.com" + eventHref,
 		BestOf:    bestOf}
 
 }
