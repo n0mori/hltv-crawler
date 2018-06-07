@@ -2,13 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"hltv/lib"
+	"log"
 	"os"
 	"sync"
 )
 
-func full() {
+func full(fileName string) {
 	links := hltv.MatchLinks()
 
 	done := make([]chan bool, 0, 100)
@@ -52,19 +54,31 @@ func full() {
 
 }
 
-func single() {
+func single(fileName string) {
 	var url string
 
 	println("Escreva a URL:")
 	fmt.Scanln(&url)
 
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0666)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
 	json, _ := json.MarshalIndent(hltv.MatchData(url), "", "\t")
-	println(string(json))
+	fmt.Fprint(file, string(json))
 
 }
 
 func main() {
+	var fileName string
 	var opt int
+
+	flag.StringVar(&fileName, "o", "matches.json", "specifies the name of the output file")
+
+	flag.Parse()
 
 	println("Escreva a opção desejada")
 	println("1 - Full")
@@ -74,9 +88,9 @@ func main() {
 
 	switch opt {
 	case 1:
-		full()
+		full(fileName)
 	case 2:
-		single()
+		single(fileName)
 	default:
 		println("bye!")
 	}
