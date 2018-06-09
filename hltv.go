@@ -18,7 +18,7 @@ func full(fileName string) {
 	matches := make([]*hltv.Match, 0, 100)
 	matchMutex := &sync.Mutex{}
 
-	file, err := os.OpenFile("matches.json", os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.Create(fileName)
 
 	if err != nil {
 		panic(err)
@@ -54,13 +54,8 @@ func full(fileName string) {
 
 }
 
-func single(fileName string) {
-	var url string
-
-	println("Escreva a URL:")
-	fmt.Scanln(&url)
-
-	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0666)
+func single(fileName, url string) {
+	file, err := os.Create(fileName)
 
 	if err != nil {
 		log.Fatal(err)
@@ -73,26 +68,41 @@ func single(fileName string) {
 }
 
 func main() {
-	var fileName string
-	var opt int
+	var fileName, url string
+	var opt, help bool
 
 	flag.StringVar(&fileName, "o", "matches.json", "specifies the name of the output file")
+	flag.BoolVar(&opt, "single", false, "Extracts data from a single results page")
+	flag.StringVar(&url, "url", "https://www.hltv.org/matches/2317926/faze-vs-sk-esl-pro-league-season-6-finals", "Specifies the url for the single option, if not present, a default page will be used")
+	flag.BoolVar(&help, "help", false, "shows this dialog")
 
 	flag.Parse()
 
-	println("Escreva a opção desejada")
-	println("1 - Full")
-	println("2 - Unico link")
-
-	fmt.Scanln(&opt)
-
-	switch opt {
-	case 1:
-		full(fileName)
-	case 2:
-		single(fileName)
-	default:
-		println("bye!")
+	if help {
+		flag.PrintDefaults()
+		os.Exit(0)
 	}
 
+	if opt {
+		single(fileName, url)
+	} else {
+		full(fileName)
+	}
+
+	/*
+		println("Escreva a opção desejada")
+		println("1 - Full")
+		println("2 - Unico link")
+
+		fmt.Scanln(&opt)
+
+		switch opt {
+		case 1:
+			full(fileName)
+		case 2:
+			single(fileName)
+		default:
+			println("bye!")
+		}
+	*/
 }
