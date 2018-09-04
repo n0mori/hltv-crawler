@@ -48,7 +48,7 @@ func full(fileName string) {
 	}
 
 	for _, m := range matches {
-		json, _ := json.MarshalIndent(m, "", "\t")
+		json, _ := json.Marshal(m)
 		fmt.Fprintln(file, string(json))
 	}
 

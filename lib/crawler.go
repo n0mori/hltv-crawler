@@ -63,8 +63,9 @@ func getDocument(url string) *goquery.Document {
 //MatchData return a Match pointer for the specified match url
 func MatchData(url string) *Match {
 	document := getDocument(url)
+	println(url)
 
-	teams := make([]Team, 5)
+	teams := make([]Team, 2)
 	r := regexp.MustCompile("/([0-9]+)/")
 	matchID, _ := strconv.Atoi(r.FindStringSubmatch(url)[1])
 	scores := make([]int, 5)
@@ -96,7 +97,7 @@ func MatchData(url string) *Match {
 		players := make([]Player, 5)
 
 		element.Find("tr").Each(func(i int, e *goquery.Selection) {
-			if i == 0 {
+			if i == 0 || i >= 6 {
 				return
 			}
 
